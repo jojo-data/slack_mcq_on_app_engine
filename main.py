@@ -18,6 +18,7 @@ from flask import Response
 from flask import Request
 import simplejson as json
 
+
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
 # called `app` in `main.py`.
 app = Flask(__name__)
@@ -48,6 +49,24 @@ def test():
 
 
 
+@app.route('/hello', methods=['POST'])
+def simple_response():
+    """Return a simple response"""
+    data = {
+        'response_type': 'in_channel',
+        'text': 'It is a simple resonse',
+        'attachments': [
+        {
+            'text': 'There is no attachments'
+        }
+        ]
+    }
+
+    js = json.dumps(data)
+    resp = Response(js,status=200,mimetype='application/json')
+    resp.headers['Content-type'] = 'application/json'
+
+    return resp
 
 if __name__ == '__main__':
     # This is used when running locally only. When deploying to Google App

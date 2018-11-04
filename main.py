@@ -14,8 +14,8 @@
 
 # [START gae_python37_app]
 from flask import Flask
-from flask import request
 from flask import Response
+from flask import Request
 import simplejson as json
 
 
@@ -24,10 +24,30 @@ import simplejson as json
 app = Flask(__name__)
 
 
-@app.route('/')
-def hello():
-    """Return a friendly HTTP greeting."""
-    return 'Hello World!'
+@app.route('/test',methods = ['POST'])
+
+def test():
+    data = {
+        'hello'  : 'world',
+        'number' : 3,
+        'response_type' : 'in_channel',
+        'text': 'hello from xy',
+        'attachments': 
+        [
+            {
+                'text': 'There is no attachments'
+            }
+        ]
+    }
+    js = json.dumps(data)
+
+    resp = Response(js, status=200, mimetype='application/json')
+    resp.headers['content-type'] = 'application/json'
+
+    return resp
+
+
+
 
 @app.route('/hello', methods=['POST'])
 def simple_response():

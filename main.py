@@ -54,7 +54,7 @@ def return_quiz():
     """Return a simple response"""
     command_text = request.args.get('text')
 
-    if (command_text.lower() == 'quiz'):
+    if (command_text == 'quiz'):
         data = {
             'text': 'Okay, let`s do this mcq qustion.\nWhat is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
             'fallback': 'You are unable to make the choice',
@@ -131,8 +131,8 @@ def return_quiz():
 @app.route('/hello/response', methods=['POST'])
 def check_answer():
     json_data=request.get_json()
-    if(json_data['type'].lower() == 'interactive_message'):
-        if(json_data['actions'][0]['value'].lower() == 'a'):
+    if(json_data['type'] == 'interactive_message'):
+        if(json_data['actions'][0]['value'] == 'a'):
             data = {
                 'response_type': 'in_channel',
                 'text': 'Congrats! You have got it right',

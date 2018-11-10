@@ -17,7 +17,10 @@ from flask import Flask
 from flask import Response
 from flask import request
 import simplejson as json
-
+import logging
+from urllib.parse import parse_qs
+#instantiate logger
+log = logging.getLogger("my-logger")
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
 # called `app` in `main.py`.
@@ -51,67 +54,74 @@ def test():
 
 @app.route('/hello', methods=['POST'])
 def return_quiz():
-    """Return a simple response"""
-    command_text = request.args.get('text')
+    #request.get_data()
+    #request.form # this is a multdict
+    log.warning(request.form)
+    command_text = request.form['text']
 
-    if (command_text == 'quiz'):
+    if (command_text is not None and command_text.lower() == 'quiz'):
         data = {
-            'text': 'Okay, let`s do this mcq qustion.\nWhat is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
-            'fallback': 'You are unable to make the choice',
-            'callback_id': 'einstein_birthday',
-            'color': '#3AA3E3',
-            'attachment_type': 'default',
-            'actions': [
+            'text': 'Okay, let`s do this mcq qustion.',
+            'attachments': [
                 {
-                    'name': 'birthday',
-                    'text': 'A',
-                    'type': 'button',
-                    'value': 'A',
-                    'confirm': {
-                        'title': 'Are you sure?',
-                        'text': 'Would you prefer another date',
-                        'ok_text': 'Yes',
-                        'dismiss_text': 'No'
-                    }
-                },
-                {
-                    'name': 'birthday',
-                    'text': 'B',
-                    'type': 'button',
-                    'value': 'B',
-                    'confirm': {
-                        'title': 'Are you sure?',
-                        'text': 'Would you prefer another date',
-                        'ok_text': 'Yes',
-                        'dismiss_text': 'No'
-                    }
-                },
-                {
-                    'name': 'birthday',
-                    'text': 'C',
-                    'type': 'button',
-                    'value': 'C',
-                    'confirm': {
-                        'title': 'Are you sure?',
-                        'text': 'Would you prefer another date',
-                        'ok_text': 'Yes',
-                        'dismiss_text': 'No'
-                    }
-                },
-                {
-                    'name': 'birthday',
-                    'text': 'D',
-                    'type': 'button',
-                    'value': 'D',
-                    'confirm': {
-                        'title': 'Are you sure?',
-                        'text': 'Would you prefer another date',
-                        'ok_text': 'Yes',
-                        'dismiss_text': 'No'
-                    }
+                    'text': 'What is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
+                    'fallback': 'You are unable to make the choice',
+                    'callback_id': 'einstein_birthday',
+                    'color': '#3AA3E3',
+                    'attachment_type': 'default',
+                    'actions': [
+                        {
+                            'name': 'birthday',
+                            'text': 'A',
+                            'type': 'button',
+                            'value': 'A',
+                            'confirm': {
+                                'title': 'Are you sure?',
+                                'text': 'Are you sure with this choice?',
+                                'ok_text': 'Yes',
+                                'dismiss_text': 'No'
+                            }
+                        },
+                        {
+                            'name': 'birthday',
+                            'text': 'B',
+                            'type': 'button',
+                            'value': 'B',
+                            'confirm': {
+                                'title': 'Are you sure?',
+                                'text': 'Are you sure with this choice?',
+                                'ok_text': 'Yes',
+                                'dismiss_text': 'No'
+                            }
+                        },
+                        {
+                            'name': 'birthday',
+                            'text': 'C',
+                            'type': 'button',
+                            'value': 'C',
+                            'confirm': {
+                                'title': 'Are you sure?',
+                                'text': 'Are you sure with this choice?',
+                                'ok_text': 'Yes',
+                                'dismiss_text': 'No'
+                            }
+                        },
+                        {
+                            'name': 'birthday',
+                            'text': 'D',
+                            'type': 'button',
+                            'value': 'D',
+                            'confirm': {
+                                'title': 'Are you sure?',
+                                'text': 'Are you sure with this choice?',
+                                'ok_text': 'Yes',
+                                'dismiss_text': 'No'
+                            }
+                        }
+                        ]
                 }
-                ]
-            }
+            ]
+        }
     else:
         data = {
             'response_type': 'in_channel',
@@ -130,25 +140,33 @@ def return_quiz():
 
 @app.route('/hello/response', methods=['POST'])
 def check_answer():
-    json_data=request.get_json()
-    if(json_data['type'] == 'interactive_message'):
-        if(json_data['actions'][0]['value'] == 'a'):
+    log.warning(request.form['payload'])
+    #print(request.data)
+    json_data = json.loads(request.form['payload'])
+    user = json_data['user']['name']
+    type = json_data['type']
+    answer = json_data['actions'][0]['value']
+
+    if(type is not None and type.lower() == 'interactive_message'):
+        if(answer is not None and answer.lower() == 'a'):
             data = {
                 'response_type': 'in_channel',
-                'text': 'Congrats! You have got it right',
+                'text': 'Congrats! '+ user +', You have got it right',
                 'attachments': [
                     {
-                        'text': 'This is an correct answer'
+                        'text': 'What is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
+                        'color': '#7FFF00'
                     }
                 ]
             }
         else:
             data = {
                 'response_type': 'in_channel',
-                'text': 'Sorry! You have got it wrong',
+                'text': 'Sorry! '+ user +', You have got it wrong',
                 'attachments': [
                     {
-                        'text': 'This is an wrong answer'
+                        'text': 'What is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
+                        'color': '#FF0000'
                     }
                 ]
             }

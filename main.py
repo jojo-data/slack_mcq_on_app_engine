@@ -42,15 +42,72 @@ def test():
             }
         ]
     }
+
+    js = json.dumps(data)
+    resp = Response(js, status=200, mimetype='application/json')
+    resp.headers['content-type'] = 'application/json'
+    return resp
+
+def buttonResp():
+        json_data = request.get_json()
+        user = json_data['user']['name']
+        if json_data['actions'][0]['name'] == "A":
+            data = {
+                'response_type': 'in_channel',
+                'text': user +', You are right!',
+            }
+        else:
+            data = {
+                'response_type': 'in_channel',
+                'text': user +', You are right',
+            }
+
+        resp = Response(js,status=200,mimetype='application/json')
+        resp.headers['content-type'] = 'application/json'
+        return resp;
+
+@app.route('/test',methods = ['POST'])
+
+def test():
+    data = {
+    "text": "This is a test!!",
+    "attachments": [
+        {
+            "text": "The correct answer is A",
+            "fallback": "Choose A please",
+            "callback_id": "quiz_test",
+            "color": "#3AA3E3",
+            "attachment_type": "default",
+            "actions": [
+                {
+                    "name": "A",
+                    "text": "A",
+					"style": "danger",
+                    "type": "button",
+                    "value": "a"
+                },
+                {
+                    "name": "B",
+                    "text": "B",
+                    "type": "button",
+                    "value": "b"
+                },
+                {
+                    "name": "C",
+                    "text": "C",                   
+                    "type": "button",
+                    "value": "c",
+                }
+            ]
+        }
+    ]
+}
     js = json.dumps(data)
 
     resp = Response(js, status=200, mimetype='application/json')
     resp.headers['content-type'] = 'application/json'
 
     return resp
-
-
-
 
 @app.route('/hello', methods=['POST'])
 def return_quiz():

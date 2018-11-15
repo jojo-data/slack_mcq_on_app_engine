@@ -27,27 +27,7 @@ log = logging.getLogger("my-logger")
 app = Flask(__name__)
 
 
-@app.route('/test',methods = ['POST'])
-
-def test():
-    data = {
-        'hello'  : 'world',
-        'number' : 3,
-        'response_type' : 'in_channel',
-        'text': 'hello from xy',
-        'attachments':
-        [
-            {
-                'text': 'There is no attachments'
-            }
-        ]
-    }
-
-    js = json.dumps(data)
-    resp = Response(js, status=200, mimetype='application/json')
-    resp.headers['content-type'] = 'application/json'
-    return resp
-
+@app.route('/test/response',methods = ['POST'])
 def buttonResp():
         json_data = request.get_json()
         user = json_data['user']['name']
@@ -69,39 +49,43 @@ def buttonResp():
 @app.route('/test',methods = ['POST'])
 
 def test():
-    data = {
-    "text": "This is a test!!",
-    "attachments": [
-        {
-            "text": "The correct answer is A",
-            "fallback": "Choose A please",
-            "callback_id": "quiz_test",
-            "color": "#3AA3E3",
-            "attachment_type": "default",
-            "actions": [
-                {
+    command_text = request.form['text']
+
+    if (command_text is not None and command_text.lower() == 'quiz'):
+        data = {
+            "text": "This is a test!!",
+            "attachments": [
+            {
+                "text": "The correct answer is A",
+                "fallback": "Choose A please",
+                "callback_id": "quiz_test",
+                "color": "#3AA3E3",
+                "attachment_type": "default",
+                "actions": [
+                    {
                     "name": "A",
                     "text": "A",
 					"style": "danger",
                     "type": "button",
                     "value": "a"
-                },
-                {
+                    },
+                    {
                     "name": "B",
                     "text": "B",
                     "type": "button",
                     "value": "b"
-                },
-                {
+                    },
+                    {
                     "name": "C",
                     "text": "C",                   
                     "type": "button",
                     "value": "c",
-                }
+                    }
+                    ]   
+                }       
             ]
         }
-    ]
-}
+
     js = json.dumps(data)
 
     resp = Response(js, status=200, mimetype='application/json')

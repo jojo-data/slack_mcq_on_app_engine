@@ -22,6 +22,7 @@ from google.cloud import datastore
 import random
 import questions
 import answers
+import users
 #instantiate logger
 log = logging.getLogger("my-logger")
 
@@ -127,8 +128,10 @@ def check_answer():
     if(type is not None and type.lower() == 'interactive_message'):
         if(user_answer is not None and user_answer.lower() == qn_answer.lower()):
             data = answers.populate_right_answer_message(entity, user)
+            users.user_update_point(client, user, 1)
         else:
             data = answers.populate_wrong_answer_message(entity, user)
+            users.user_update_point(client, user, -1)
     else:
         data = {
             'response_type': 'in_channel',

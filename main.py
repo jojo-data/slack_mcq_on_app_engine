@@ -107,14 +107,15 @@ def check_answer():
     log.warning(f"payload is: {request.form['payload']}")
     #print(request.data)
     json_data = json.loads(request.form['payload'])
-    user = json_data['user']['name']
+    log.warning(f"json_data is: {json_data}")
+    user = json_data['user']
     type = json_data['type']
     value = json_data['actions'][0]['value']
     question_id = value.split(',')[0]
     user_answer = value.split(',')[1]
-    key = client.key('Questions', question_id, namespace='Slack_MCQ')
+    key = client.key('Questions', int(question_id), namespace='Slack_MCQ')
     entity = client.get(key)
-    log.warning(f'entity is: {entity}')
+    log.warning(f"entity is: {entity}")
     # to extracr the right answer from entity
     qn_answer = None
     i = 0
@@ -124,10 +125,10 @@ def check_answer():
         i += 1
 
     if(type is not None and type.lower() == 'interactive_message'):
-        if(answer is not None and user_answer.lower() == qn_answer.lower()):
-            data = populate_right_answer_message(entity, user)
+        if(user_answer is not None and user_answer.lower() == qn_answer.lower()):
+            data = answers.populate_right_answer_message(entity, user)
         else:
-            data = populate_wrong_answer_message(entity, user)
+            data = answers.populate_wrong_answer_message(entity, user)
     else:
         data = {
             'response_type': 'in_channel',

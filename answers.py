@@ -5,7 +5,7 @@ import questions
 def populate_right_answer_message(entity, user):
     data = {
         'response_type': 'in_channel',
-        'text': 'Congrats! '+ user +', You have got it right',
+        'text': 'Congrats! <@'+ user['id'] +'>, You have got it right',
         'attachments': [
             {
                 'text': questions.populate_question_text(entity, len(entity['choices'])),
@@ -18,7 +18,7 @@ def populate_right_answer_message(entity, user):
 def populate_wrong_answer_message(entity, user):
     data = {
         'response_type': 'in_channel',
-        'text': 'Sorry! '+ user +', You have got it wrong',
+        'text': 'Sorry! <@'+ user['id'] +'>, You have got it wrong',
         'attachments': [
             {
                 'text': questions.populate_question_text(entity, len(entity['choices'])),

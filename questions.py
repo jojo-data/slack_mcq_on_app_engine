@@ -21,7 +21,8 @@ def populate_buttons(id, total_choices_num):
     data = []
     for i in range(total_choices_num):
         item = {
-            # 'name': 'birthday',
+            #name field is mandatory for display any button
+            'name': 'birthday',
             'text': number_to_alphabet[i],
             'type': 'button',
             'value': str(id) + ',' + number_to_alphabet[i],
@@ -42,7 +43,8 @@ def populate_question(entity):
             {
                 'text': populate_question_text(entity, len(entity['choices'])),
                 'fallback': 'You are unable to make the choice',
-                # 'callback_id': 'einstein_birthday',
+                #callback_id is mandatory to trigger a post request to response handling route
+                'callback_id': 'alpha_quiz_bot_callback',
                 'color': '#3AA3E3',
                 'attachment_type': 'default',
                 'actions': populate_buttons(entity.id, len(entity['choices']))

@@ -18,9 +18,15 @@ from flask import Response
 from flask import request
 import simplejson as json
 import logging
-from urllib.parse import parse_qs
+from google.cloud import datastore
+import random
+import questions
+import answers
 #instantiate logger
 log = logging.getLogger("my-logger")
+
+#instantiate datastore client
+client = datastore.Client()
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
 # called `app` in `main.py`.
@@ -56,76 +62,34 @@ def test():
 def return_quiz():
     #request.get_data()
     #request.form # this is a multdict
-    log.warning(request.form)
+    log.warning(f'request.form: {request.form}')
     command_text = request.form['text']
 
+    # key = client.key('EntityKind', 1234)
+    # entity = datastore.Entity(key=key)
+    # entity.update({
+    #     'foo': u'bar',
+    #     'baz': 1337,
+    #     'qux': False,
+    # })
+    # client.put(entity)
+
+    #to randomly get a question entity from datastore
+    query = client.query(kind='Questions', namespace='Slack_MCQ')
+    query.keys_only()
+    total = len(list(query.fetch()))
+    offset = random.randint(0,total-1)
+    selected_qn_id = list(query.fetch(1, offset=offset))[0].id
+    key = client.key('Questions', selected_qn_id, namespace='Slack_MCQ')
+    entity = client.get(key)
+    log.warning(f'entity is: {entity}')
+
     if (command_text is not None and command_text.lower() == 'quiz'):
-        data = {
-            'text': 'Okay, let`s do this mcq qustion.',
-            'attachments': [
-                {
-                    'text': 'What is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
-                    'fallback': 'You are unable to make the choice',
-                    'callback_id': 'einstein_birthday',
-                    'color': '#3AA3E3',
-                    'attachment_type': 'default',
-                    'actions': [
-                        {
-                            'name': 'birthday',
-                            'text': 'A',
-                            'type': 'button',
-                            'value': 'A',
-                            'confirm': {
-                                'title': 'Are you sure?',
-                                'text': 'Are you sure with this choice?',
-                                'ok_text': 'Yes',
-                                'dismiss_text': 'No'
-                            }
-                        },
-                        {
-                            'name': 'birthday',
-                            'text': 'B',
-                            'type': 'button',
-                            'value': 'B',
-                            'confirm': {
-                                'title': 'Are you sure?',
-                                'text': 'Are you sure with this choice?',
-                                'ok_text': 'Yes',
-                                'dismiss_text': 'No'
-                            }
-                        },
-                        {
-                            'name': 'birthday',
-                            'text': 'C',
-                            'type': 'button',
-                            'value': 'C',
-                            'confirm': {
-                                'title': 'Are you sure?',
-                                'text': 'Are you sure with this choice?',
-                                'ok_text': 'Yes',
-                                'dismiss_text': 'No'
-                            }
-                        },
-                        {
-                            'name': 'birthday',
-                            'text': 'D',
-                            'type': 'button',
-                            'value': 'D',
-                            'confirm': {
-                                'title': 'Are you sure?',
-                                'text': 'Are you sure with this choice?',
-                                'ok_text': 'Yes',
-                                'dismiss_text': 'No'
-                            }
-                        }
-                        ]
-                }
-            ]
-        }
+        data = questions.populate_question(entity)
     else:
         data = {
             'response_type': 'in_channel',
-            'text': 'Please type quiz',
+            'text': 'Please type /hello quiz',
             'attachments': [
                 {
                     'text': 'This is a reminder message'
@@ -140,36 +104,30 @@ def return_quiz():
 
 @app.route('/hello/response', methods=['POST'])
 def check_answer():
-    log.warning(request.form['payload'])
+    log.warning(f"payload is: {request.form['payload']}")
     #print(request.data)
     json_data = json.loads(request.form['payload'])
     user = json_data['user']['name']
     type = json_data['type']
-    answer = json_data['actions'][0]['value']
+    value = json_data['actions'][0]['value']
+    question_id = value.split(',')[0]
+    user_answer = value.split(',')[1]
+    key = client.key('Questions', question_id, namespace='Slack_MCQ')
+    entity = client.get(key)
+    log.warning(f'entity is: {entity}')
+    # to extracr the right answer from entity
+    qn_answer = None
+    i = 0
+    while(qn_answer == None):
+        if(entity['choices'][i]['right_answer'] == True):
+            qn_answer = questions.number_to_alphabet[i]
+        i += 1
 
     if(type is not None and type.lower() == 'interactive_message'):
-        if(answer is not None and answer.lower() == 'a'):
-            data = {
-                'response_type': 'in_channel',
-                'text': 'Congrats! '+ user +', You have got it right',
-                'attachments': [
-                    {
-                        'text': 'What is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
-                        'color': '#7FFF00'
-                    }
-                ]
-            }
+        if(answer is not None and user_answer.lower() == qn_answer.lower()):
+            data = populate_right_answer_message(entity, user)
         else:
-            data = {
-                'response_type': 'in_channel',
-                'text': 'Sorry! '+ user +', You have got it wrong',
-                'attachments': [
-                    {
-                        'text': 'What is Alber Einstein`s birthday\nA: 14 March 1879\nB:15 April 1880\nC:16 May 1881\nD:17 June 1882',
-                        'color': '#FF0000'
-                    }
-                ]
-            }
+            data = populate_wrong_answer_message(entity, user)
     else:
         data = {
             'response_type': 'in_channel',

@@ -19,7 +19,6 @@ from flask import request
 import simplejson as json
 import logging
 from google.cloud import datastore
-import random
 import questions
 import answers
 import users
@@ -66,31 +65,14 @@ def return_quiz():
     log.warning(f'request.form: {request.form}')
     command_text = request.form['text']
 
-    # key = client.key('EntityKind', 1234)
-    # entity = datastore.Entity(key=key)
-    # entity.update({
-    #     'foo': u'bar',
-    #     'baz': 1337,
-    #     'qux': False,
-    # })
-    # client.put(entity)
-
-    #to randomly get a question entity from datastore
-    query = client.query(kind='Questions', namespace='Slack_MCQ')
-    query.keys_only()
-    total = len(list(query.fetch()))
-    offset = random.randint(0,total-1)
-    selected_qn_id = list(query.fetch(1, offset=offset))[0].id
-    key = client.key('Questions', selected_qn_id, namespace='Slack_MCQ')
-    entity = client.get(key)
-    log.warning(f'entity is: {entity}')
-
     if (command_text is not None and command_text.lower() == 'quiz'):
-        data = questions.populate_question(entity)
+        data = questions.populate_question(client)
+    elif (command_text is not None and command_text.lower() == 'leaderboard'):
+        data = users.populate_leaderboad(client)
     else:
         data = {
-            'response_type': 'in_channel',
-            'text': 'Please type /hello quiz',
+            'response_type': 'ephemeral',
+            'text': 'Please type /hello quiz for quiz and /hello leaderboard for ranking',
             'attachments': [
                 {
                     'text': 'This is a reminder message'
@@ -114,18 +96,20 @@ def check_answer():
     value = json_data['actions'][0]['value']
     question_id = value.split(',')[0]
     user_answer = value.split(',')[1]
-    key = client.key('Questions', int(question_id), namespace='Slack_MCQ')
-    entity = client.get(key)
-    log.warning(f"entity is: {entity}")
-    # to extracr the right answer from entity
-    qn_answer = None
-    i = 0
-    while(qn_answer == None):
-        if(entity['choices'][i]['right_answer'] == True):
-            qn_answer = questions.number_to_alphabet[i]
-        i += 1
 
-    if(type is not None and type.lower() == 'interactive_message'):
+    if(question_id == 'new'):
+        if(user_answer == 'yes'):
+            data = questions.populate_question(client)
+        else:
+            resp = Response(status=200)
+            return resp
+    elif(type is not None and type.lower() == 'interactive_message'):
+        key = client.key('Questions', int(question_id), namespace='Slack_MCQ')
+        entity = client.get(key)
+        log.warning(f"entity is: {entity}")
+
+        qn_answer = answers.extrac_right_answer_from_question_id(entity)
+
         if(user_answer is not None and user_answer.lower() == qn_answer.lower()):
             data = answers.populate_right_answer_message(entity, user)
             users.user_update_point(client, user, 1)
@@ -134,7 +118,7 @@ def check_answer():
             users.user_update_point(client, user, -1)
     else:
         data = {
-            'response_type': 'in_channel',
+            'response_type': 'ephemeral',
             'text': 'We did not get your message',
             'attachments': [
                 {

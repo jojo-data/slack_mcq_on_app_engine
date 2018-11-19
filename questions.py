@@ -1,5 +1,10 @@
 #this python files includes all questions related functions
 
+import random
+import logging
+#instantiate logger
+log = logging.getLogger("my-logger")
+
 number_to_alphabet = {
     0 : 'A',
     1 : 'B',
@@ -26,18 +31,30 @@ def populate_buttons(id, total_choices_num):
             'text': number_to_alphabet[i],
             'type': 'button',
             'value': str(id) + ',' + number_to_alphabet[i],
-            'confirm': {
-                'title': 'Are you sure?',
-                'text': 'Are you sure with this choice?',
-                'ok_text': 'Yes',
-                'dismiss_text': 'No'
-            }
+            # REMOVE confirm block to enhance better user experience
+            # 'confirm': {
+            #     'title': 'Are you sure?',
+            #     'text': 'Are you sure with this choice?',
+            #     'ok_text': 'Yes',
+            #     'dismiss_text': 'No'
+            # }
         }
         data.append(item)
     return data
 
-def populate_question(entity):
+def populate_question(client):
+    #to randomly get a question entity from datastore
+    query = client.query(kind='Questions', namespace='Slack_MCQ')
+    query.keys_only()
+    total = len(list(query.fetch()))
+    offset = random.randint(0,total-1)
+    selected_qn_id = list(query.fetch(1, offset=offset))[0].id
+    key = client.key('Questions', selected_qn_id, namespace='Slack_MCQ')
+    entity = client.get(key)
+    log.warning(f'entity is: {entity}')
+
     data = {
+        'response_type': 'in_channel',
         'text': 'Okay, let`s do this mcq qustion.',
         'attachments': [
             {

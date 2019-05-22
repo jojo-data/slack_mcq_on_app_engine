@@ -22,10 +22,11 @@ from google.cloud import datastore
 import questions
 import answers
 import users
-#instantiate logger
+
+# instantiate logger
 log = logging.getLogger("my-logger")
 
-#instantiate datastore client
+# instantiate datastore client
 client = datastore.Client()
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
@@ -33,20 +34,19 @@ client = datastore.Client()
 app = Flask(__name__)
 
 
-@app.route('/test',methods = ['POST'])
-
+@app.route('/test', methods=['POST'])
 def test():
     data = {
-        'hello'  : 'world',
-        'number' : 3,
-        'response_type' : 'in_channel',
+        'hello': 'world',
+        'number': 3,
+        'response_type': 'in_channel',
         'text': 'hello from xy',
         'attachments':
-        [
-            {
-                'text': 'There is no attachments'
-            }
-        ]
+            [
+                {
+                    'text': 'There is no attachments'
+                }
+            ]
     }
     js = json.dumps(data)
 
@@ -56,19 +56,17 @@ def test():
     return resp
 
 
-
-
 @app.route('/hello', methods=['POST'])
 def return_quiz():
-    #request.get_data()
-    #request.form # this is a multdict
+    # request.get_data()
+    # request.form # this is a multdict
     log.warning(f'request.form: {request.form}')
     command_text = request.form['text']
 
-    if (command_text is not None and command_text.lower() == 'quiz'):
+    if command_text is not None and command_text.lower() == 'quiz':
         data = questions.populate_question(client)
-    elif (command_text is not None and command_text.lower() == 'leaderboard'):
-        data = users.populate_leaderboad(client)
+    elif command_text is not None and command_text.lower() == 'leaderboard':
+        data = users.populate_leaderboard(client)
     else:
         data = {
             'response_type': 'ephemeral',
@@ -81,14 +79,15 @@ def return_quiz():
         }
 
     js = json.dumps(data)
-    resp = Response(js,status=200,mimetype='application/json')
+    resp = Response(js, status=200, mimetype='application/json')
     resp.headers['Content-type'] = 'application/json'
     return resp
+
 
 @app.route('/hello/response', methods=['POST'])
 def check_answer():
     log.warning(f"payload is: {request.form['payload']}")
-    #print(request.data)
+    # print(request.data)
     json_data = json.loads(request.form['payload'])
     log.warning(f"json_data is: {json_data}")
     user = json_data['user']
@@ -97,20 +96,20 @@ def check_answer():
     question_id = value.split(',')[0]
     user_answer = value.split(',')[1]
 
-    if(question_id == 'new'):
-        if(user_answer == 'yes'):
+    if question_id == 'new':
+        if user_answer == 'yes':
             data = questions.populate_question(client)
         else:
             resp = Response(status=200)
             return resp
-    elif(type is not None and type.lower() == 'interactive_message'):
+    elif type is not None and type.lower() == 'interactive_message':
         key = client.key('Questions', int(question_id), namespace='Slack_MCQ')
         entity = client.get(key)
         log.warning(f"entity is: {entity}")
 
-        qn_answer = answers.extrac_right_answer_from_question_id(entity)
+        qn_answer = answers.extract_right_answer_from_question_id(entity)
 
-        if(user_answer is not None and user_answer.lower() == qn_answer.lower()):
+        if user_answer is not None and user_answer.lower() == qn_answer.lower():
             data = answers.populate_right_answer_message(entity, user)
             users.user_update_point(client, user, 1)
         else:
@@ -128,10 +127,9 @@ def check_answer():
         }
 
     js = json.dumps(data)
-    resp = Response(js,status=200,mimetype='application/json')
+    resp = Response(js, status=200, mimetype='application/json')
     resp.headers['Content-type'] = 'application/json'
     return resp
-
 
 
 if __name__ == '__main__':

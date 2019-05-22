@@ -1,2 +1,4 @@
-
+./idea
 __pycache__/main\.cpython-36\.pyc
+.gitignore
+.gcloudignore
